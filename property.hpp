@@ -9,7 +9,9 @@
 #include "core_macros.hpp"
 #include "basic_error.hpp"
 
-/* This class is created in order to emulate the C# property. */ 
+/* This class is created in order to emulate the C# property.
+To use the equivalent to value_type variable_name{ get; set; } just write dt0::property<insert-type> variable_name 
+To use a readonly property use dt0::property<insert-type, dt0::readonly> */ 
 
 namespace dt0
 {
