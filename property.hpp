@@ -9,6 +9,8 @@
 #include "core_macros.hpp"
 #include "basic_error.hpp"
 
+/* This class is created in order to emulate the C# property. */ 
+
 namespace dt0
 {
 	template <typename, typename>
