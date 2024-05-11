@@ -576,7 +576,7 @@ namespace dt0
 			}
 		}
 
-		___constexpr20___ property(const property<value_type>& other)
+		___constexpr20___ property(const property<value_type, readonly>& other)
 		{
 			if (this == __builtin_addressof(other))
 			{
@@ -619,7 +619,50 @@ namespace dt0
 			}
 		}
 
-		___constexpr20___ property(property<value_type>&& other) noexcept(false)
+		___constexpr20___ property(const property<value_type, complete>& other)
+		{
+			if (reinterpret_cast<property<value_type, complete>*>(this) == __builtin_addressof(other))
+			{
+				throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
+					std::string(">: Self-assignment not allowed!"));
+			}
+
+			try
+			{
+				_core = reinterpret_cast<value_type*>(::operator new(sizeof(value_type)));
+			}
+
+			catch (std::bad_alloc _error)
+			{
+				throw;
+			}
+
+			if (std::is_constructible<value_type>::value)
+			{
+				if (std::is_copy_constructible<value_type>::value)
+					::new(_core) value_type(other.get());
+
+				else
+				{
+					throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
+						std::string(">: Can not assign value because type is neither\nconstructible nor copy constructible!"));
+				}
+			}
+
+			else
+			{
+				if (std::is_copy_assignable<value_type>::value)
+					*_core = other.get();
+
+				else
+				{
+					throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
+						std::string(">: Can not assign value because type is not copy assignable!"));
+				}
+			}
+		}
+
+		___constexpr20___ property(property<value_type, readonly>&& other) noexcept(false)
 		{
 			if (this == __builtin_addressof(other))
 			{
@@ -640,7 +683,7 @@ namespace dt0
 			if (std::is_constructible<value_type>::value)
 			{
 				if (std::is_move_constructible<value_type>::value)
-					::new(_core) value_type(std::move(other));
+					::new(_core) value_type(std::move(other.get()));
 
 				else
 				{
@@ -652,7 +695,50 @@ namespace dt0
 			else
 			{
 				if (std::is_move_assignable<value_type>::value)
-					*_core = std::move(other);
+					*_core = std::move(other.get());
+
+				else
+				{
+					throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
+						std::string(">: Can not assign value because type is not move assignable!"));
+				}
+			}
+		}
+
+		___constexpr20___ property(property<value_type, complete>&& other) noexcept(false)
+		{
+			if (reinterpret_cast<property<value_type, complete>*>(this) == __builtin_addressof(other))
+			{
+				throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
+					std::string(">: Self-assignment not allowed!"));
+			}
+
+			try
+			{
+				_core = reinterpret_cast<value_type*>(::operator new(sizeof(value_type)));
+			}
+
+			catch (std::bad_alloc _error)
+			{
+				throw;
+			}
+
+			if (std::is_constructible<value_type>::value)
+			{
+				if (std::is_move_constructible<value_type>::value)
+					::new(_core) value_type(std::move(other.get()));
+
+				else
+				{
+					throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
+						std::string(">: Can not assign value because type is neither\nconstructible nor move constructible!"));
+				}
+			}
+
+			else
+			{
+				if (std::is_move_assignable<value_type>::value)
+					*_core = std::move(other.get());
 
 				else
 				{
@@ -688,7 +774,7 @@ namespace dt0
 			return _core;
 		}
 
-		friend std::ostream& operator<< (std::ostream& out, const property<value_type>& prop)
+		friend std::ostream& operator<< (std::ostream& out, const property<value_type, readonly>& prop)
 		{
 			out << *prop._core;
 
