@@ -4,6 +4,9 @@
 #include <stdexcept>
 #include <string>
 
+/* It's just an error class that inherits from std::exception, it supports strings as input
+(idk how it is on other compilers but on MSVC it takes in only const char pointer basically) */ 
+
 namespace dt0
 {
 	class basic_error : public std::exception
