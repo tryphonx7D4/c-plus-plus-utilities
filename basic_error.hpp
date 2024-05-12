@@ -13,15 +13,23 @@ namespace dt0
 	{
 	public:
 		using base = std::exception;
-
+	
 		basic_error() noexcept : base() {}
-
+	
 		explicit basic_error(char const* const message) noexcept : base(message) {}
-
+	
 		basic_error(const std::string& message) noexcept : base(message.c_str()) {}
-
+	
 		basic_error(std::string&& message) noexcept : base(message.c_str()) {}
-
+	
+		basic_error(const std::exception& error) noexcept : base(error.what()) {}
+	
+		basic_error(std::exception&& error) noexcept : base(error.what()) {}
+	
+		basic_error(const basic_error& error) noexcept : base(error.what()) {}
+	
+		basic_error(basic_error&& error) noexcept : base(error.what()) {}
+	
 		~basic_error() noexcept = default;
 	};
 }
