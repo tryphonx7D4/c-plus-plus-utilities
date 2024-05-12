@@ -9,9 +9,10 @@
 #include "core_macros.hpp"
 #include "basic_error.hpp"
 
-/* This class is created in order to emulate the C# property.
-To use the equivalent to value_type variable_name{ get; set; } just write dt0::property<insert-type> variable_name 
-To use a readonly property use dt0::property<insert-type, dt0::readonly> */ 
+/* The property class is created to emulate the C#-style properties
+To use a regular property that is get and set then just use dt0::property<insert-type>
+To use a read only property use dt0::property<insert-type, dt0::readonly> 
+(this is essentially a const property, once initialized it is read only)*/
 
 namespace dt0
 {
@@ -141,7 +142,7 @@ namespace dt0
 			if (std::is_constructible<value_type>::value)
 			{
 				if (std::is_copy_constructible<value_type>::value)
-					::new(_core) value_type(other.get());
+					::new(_core) value_type(other._core);
 
 				else
 				{
@@ -153,7 +154,7 @@ namespace dt0
 			else
 			{
 				if (std::is_copy_assignable<value_type>::value)
-					*_core = other.get();
+					*_core = other._core;
 
 				else
 				{
@@ -184,7 +185,7 @@ namespace dt0
 			if (std::is_constructible<value_type>::value)
 			{
 				if (std::is_move_constructible<value_type>::value)
-					::new(_core) value_type(std::move(other.get()));
+					::new(_core) value_type(std::move(other._core));
 
 				else
 				{
@@ -196,7 +197,7 @@ namespace dt0
 			else
 			{
 				if (std::is_move_assignable<value_type>::value)
-					*_core = std::move(other.get());
+					*_core = std::move(other._core);
 
 				else
 				{
@@ -208,17 +209,20 @@ namespace dt0
 
 		~property() noexcept(false)
 		{
-			if (std::is_destructible<value_type>::value)
-				_core->~value_type();
-
-			try
+			if (_core != nullptr)
 			{
-				::operator delete(_core, sizeof(value_type));
-			}
+				if (std::is_destructible<value_type>::value)
+					_core->~value_type();
 
-			catch (std::bad_alloc _error)
-			{
-				throw;
+				try
+				{
+					::operator delete(_core, sizeof(value_type));
+				}
+
+				catch (std::bad_alloc _error)
+				{
+					throw;
+				}
 			}
 		}
 
@@ -227,7 +231,7 @@ namespace dt0
 			return *_core;
 		}
 
-		const property<value_type> operator= (const value_type& other)
+		const property<value_type>& operator= (const value_type& other)
 		{	
 			if (_core == nullptr)
 			{
@@ -283,7 +287,7 @@ namespace dt0
 			return *this;
 		}
 
-		const property<value_type> operator= (value_type&& other) noexcept(false)
+		const property<value_type>& operator= (value_type&& other) noexcept(false)
 		{
 			if (_core == nullptr)
 			{
@@ -362,7 +366,7 @@ namespace dt0
 				if (std::is_constructible<value_type>::value)
 				{
 					if (std::is_copy_constructible<value_type>::value)
-						::new(_core) value_type(other.get());
+						::new(_core) value_type(other._core);
 
 					else
 					{
@@ -374,7 +378,7 @@ namespace dt0
 				else
 				{
 					if (std::is_copy_assignable<value_type>::value)
-						*_core = other.get();
+						*_core = other._core;
 
 					else
 					{
@@ -387,7 +391,7 @@ namespace dt0
 			else
 			{
 				if (std::is_copy_assignable<value_type>::value)
-					*_core = other.get();
+					*_core = other._core;
 
 				else
 				{
@@ -422,7 +426,7 @@ namespace dt0
 				if (std::is_constructible<value_type>::value)
 				{
 					if (std::is_move_constructible<value_type>::value)
-						::new(_core) value_type(std::move(other.get()));
+						::new(_core) value_type(std::move(other._core));
 
 					else
 					{
@@ -434,7 +438,7 @@ namespace dt0
 				else
 				{
 					if (std::is_move_assignable<value_type>::value)
-						*_core = std::move(other.get());
+						*_core = std::move(other._core);
 
 					else
 					{
@@ -447,7 +451,7 @@ namespace dt0
 			else
 			{
 				if (std::is_move_assignable<value_type>::value)
-					*_core = std::move(other.get());
+					*_core = std::move(other._core);
 
 				else
 				{
@@ -504,8 +508,6 @@ namespace dt0
 				::new(_core) value_type();
 		}
 
-		___constexpr20___ property(std::nullptr_t) noexcept : _core(nullptr) {}
-
 		___constexpr20___ property(const value_type& other)
 		{
 			try
@@ -526,7 +528,7 @@ namespace dt0
 				else
 				{
 					throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
-						std::string(">: Can not assign value because type is neither\nconstructible nor copy constructible!"));
+						std::string(", readonly>: Can not assign value because type is neither\nconstructible nor copy constructible!"));
 				}
 			}
 
@@ -538,7 +540,7 @@ namespace dt0
 				else
 				{
 					throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
-						std::string(">: Can not assign value because type is not copy assignable!"));
+						std::string(", readonly>: Can not assign value because type is not copy assignable!"));
 				}
 			}
 		}
@@ -563,7 +565,7 @@ namespace dt0
 				else
 				{
 					throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
-						std::string(">: Can not assign value because type is neither\nconstructible nor move constructible!"));
+						std::string(", readonly>: Can not assign value because type is neither\nconstructible nor move constructible!"));
 				}
 			}
 
@@ -575,7 +577,7 @@ namespace dt0
 				else
 				{
 					throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
-						std::string(">: Can not assign value because type is not move assignable!"));
+						std::string(", readonly>: Can not assign value because type is not move assignable!"));
 				}
 			}
 		}
@@ -585,7 +587,7 @@ namespace dt0
 			if (this == __builtin_addressof(other))
 			{
 				throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
-					std::string(">: Self-assignment not allowed!"));
+					std::string(", readonly>: Self-assignment not allowed!"));
 			}
 
 			try
@@ -601,24 +603,24 @@ namespace dt0
 			if (std::is_constructible<value_type>::value)
 			{
 				if (std::is_copy_constructible<value_type>::value)
-					::new(_core) value_type(other.get());
+					::new(_core) value_type(other._core);
 
 				else
 				{
 					throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
-						std::string(">: Can not assign value because type is neither\nconstructible nor copy constructible!"));
+						std::string(", readonly>: Can not assign value because type is neither\nconstructible nor copy constructible!"));
 				}
 			}
 
 			else
 			{
 				if (std::is_copy_assignable<value_type>::value)
-					*_core = other.get();
+					*_core = other._core;
 
 				else
 				{
 					throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
-						std::string(">: Can not assign value because type is not copy assignable!"));
+						std::string(", readonly>: Can not assign value because type is not copy assignable!"));
 				}
 			}
 		}
@@ -628,7 +630,7 @@ namespace dt0
 			if (reinterpret_cast<property<value_type, complete>*>(this) == __builtin_addressof(other))
 			{
 				throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
-					std::string(">: Self-assignment not allowed!"));
+					std::string(", readonly>: Self-assignment not allowed!"));
 			}
 
 			try
@@ -644,24 +646,24 @@ namespace dt0
 			if (std::is_constructible<value_type>::value)
 			{
 				if (std::is_copy_constructible<value_type>::value)
-					::new(_core) value_type(other.get());
+					::new(_core) value_type(other._core);
 
 				else
 				{
 					throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
-						std::string(">: Can not assign value because type is neither\nconstructible nor copy constructible!"));
+						std::string(", readonly>: Can not assign value because type is neither\nconstructible nor copy constructible!"));
 				}
 			}
 
 			else
 			{
 				if (std::is_copy_assignable<value_type>::value)
-					*_core = other.get();
+					*_core = other._core;
 
 				else
 				{
 					throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
-						std::string(">: Can not assign value because type is not copy assignable!"));
+						std::string(", readonly>: Can not assign value because type is not copy assignable!"));
 				}
 			}
 		}
@@ -671,7 +673,7 @@ namespace dt0
 			if (this == __builtin_addressof(other))
 			{
 				throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
-					std::string(">: Self-assignment not allowed!"));
+					std::string(", readonly>: Self-assignment not allowed!"));
 			}
 
 			try
@@ -687,24 +689,24 @@ namespace dt0
 			if (std::is_constructible<value_type>::value)
 			{
 				if (std::is_move_constructible<value_type>::value)
-					::new(_core) value_type(std::move(other.get()));
+					::new(_core) value_type(std::move(other._core));
 
 				else
 				{
 					throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
-						std::string(">: Can not assign value because type is neither\nconstructible nor move constructible!"));
+						std::string(", readonly>: Can not assign value because type is neither\nconstructible nor move constructible!"));
 				}
 			}
 
 			else
 			{
 				if (std::is_move_assignable<value_type>::value)
-					*_core = std::move(other.get());
+					*_core = std::move(other._core);
 
 				else
 				{
 					throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
-						std::string(">: Can not assign value because type is not move assignable!"));
+						std::string(", readonly>: Can not assign value because type is not move assignable!"));
 				}
 			}
 		}
@@ -714,7 +716,7 @@ namespace dt0
 			if (reinterpret_cast<property<value_type, complete>*>(this) == __builtin_addressof(other))
 			{
 				throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
-					std::string(">: Self-assignment not allowed!"));
+					std::string(", readonly>: Self-assignment not allowed!"));
 			}
 
 			try
@@ -730,24 +732,24 @@ namespace dt0
 			if (std::is_constructible<value_type>::value)
 			{
 				if (std::is_move_constructible<value_type>::value)
-					::new(_core) value_type(std::move(other.get()));
+					::new(_core) value_type(std::move(other._core));
 
 				else
 				{
 					throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
-						std::string(">: Can not assign value because type is neither\nconstructible nor move constructible!"));
+						std::string(", readonly>: Can not assign value because type is neither\nconstructible nor move constructible!"));
 				}
 			}
 
 			else
 			{
 				if (std::is_move_assignable<value_type>::value)
-					*_core = std::move(other.get());
+					*_core = std::move(other._core);
 
 				else
 				{
 					throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
-						std::string(">: Can not assign value because type is not move assignable!"));
+						std::string(", readonly>: Can not assign value because type is not move assignable!"));
 				}
 			}
 		}
