@@ -1,6 +1,54 @@
 #ifndef CORE_MACROS_HPP
 #define CORE_MACROS_HPP
 
+#ifndef ___constexpr___
+	#ifdef _WIN64
+		#if _MSVC_LANG > 199711L
+			#define ___constexpr___ constexpr
+		#else
+			#define ___constexpr___
+		#endif
+	#else
+		#if __cplusplus > 199711L
+			#define ___constexpr___ constexpr
+		#else
+			#define ___constexpr___
+		#endif
+	#endif
+#endif
+
+#ifndef ___constexpr14___
+	#ifdef _WIN64
+		#if _MSVC_LANG > 201103L
+			#define ___constexpr14___ constexpr
+		#else
+			#define ___constexpr14___
+		#endif
+	#else
+		#if __cplusplus > 201103L
+			#define ___constexpr14___ constexpr
+		#else
+			#define ___constexpr14___
+		#endif
+	#endif
+#endif
+
+#ifndef ___constexpr17___
+	#ifdef _WIN64
+		#if _MSVC_LANG > 201402L
+			#define ___constexpr17___ constexpr
+		#else
+			#define ___constexpr17___
+		#endif
+	#else
+		#if __cplusplus > 201402L
+			#define ___constexpr17___ constexpr
+		#else
+			#define ___constexpr17___
+		#endif
+	#endif
+#endif
+
 #ifndef ___constexpr20___
 	#ifdef _WIN64
 		#if _MSVC_LANG > 201703L
