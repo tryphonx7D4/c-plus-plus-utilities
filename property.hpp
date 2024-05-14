@@ -166,12 +166,6 @@ namespace dt0
 
 		___constexpr20___ property(const property<value_type, readonly>& other)
 		{
-			if (reinterpret_cast<const property<value_type, readonly>*>(this) == __builtin_addressof(other))
-			{
-				throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
-					std::string(">: Self-assignment not allowed!"));
-			}
-
 			try
 			{
 				_core = reinterpret_cast<value_type*>(::operator new(sizeof(value_type)));
@@ -209,12 +203,6 @@ namespace dt0
 
 		___constexpr20___ property(property<value_type>&& other) noexcept(false)
 		{
-			if (this == __builtin_addressof(other))
-			{
-				throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) + 
-					std::string(">: Self-assignment not allowed!"));
-			}
-
 			try
 			{
 				_core = reinterpret_cast<value_type*>(::operator new(sizeof(value_type)));
@@ -272,28 +260,6 @@ namespace dt0
 		___nodiscard___ const value_type& get() const
 		{
 			return *_core;
-		}
-
-		___nodiscard___ value_type&& get() 
-		{
-			value_type _temp = std::move(*_core);
-
-			if (std::is_destructible<value_type>::value)
-				_core->~value_type();
-
-			try
-			{
-				::operator delete(_core, sizeof(value_type));
-			}
-
-			catch (std::bad_alloc _error)
-			{
-				throw;
-			}
-
-			_core = nullptr;
-
-			return static_cast<value_type&&>(_temp);
 		}
 
 		value_type const* const operator-> () const
@@ -475,12 +441,6 @@ namespace dt0
 
 		const property<value_type>& operator= (const property<value_type, readonly>& other)
 		{
-			if (reinterpret_cast<const property<value_type, readonly>*>(this) == __builtin_addressof(other))
-			{
-				throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
-					std::string(">: Self-assignment not allowed!"));
-			}
-
 			if (_core == nullptr)
 			{
 				try
@@ -535,12 +495,6 @@ namespace dt0
 
 		const property<value_type>& operator= (property<value_type>&& other) noexcept(false)
 		{
-			if (this == __builtin_addressof(other))
-			{
-				throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
-					std::string(">: Self-assignment not allowed!"));
-			}
-
 			if (_core == nullptr)
 			{
 				try
@@ -605,6 +559,38 @@ namespace dt0
 			in >> *prop._core;
 
 			return in;
+		}
+
+		___nodiscard___ bool operator== (const property<value_type>& prop) const
+		{
+			if (*_core == prop.get())
+				return true;
+
+			return false;
+		}
+
+		___nodiscard___ bool operator== (property<value_type>&& prop) const noexcept
+		{
+			if (*_core == prop.get())
+				return true;
+
+			return false;
+		}
+
+		___nodiscard___ bool operator== (const property<value_type, readonly>& prop) const
+		{
+			if (*_core == prop.get())
+				return true;
+
+			return false;
+		}
+
+		___nodiscard___ bool operator== (property<value_type, readonly>&& prop) const noexcept
+		{
+			if (*_core == prop.get())
+				return true;
+
+			return false;
 		}
 
 	private:
@@ -795,12 +781,6 @@ namespace dt0
 
 		___constexpr20___ property(property<value_type, readonly>&& other) noexcept(false)
 		{
-			if (this == __builtin_addressof(other))
-			{
-				throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
-					std::string(", readonly>: Self-assignment not allowed!"));
-			}
-
 			try
 			{
 				_core = reinterpret_cast<value_type*>(::operator new(sizeof(value_type)));
@@ -838,12 +818,6 @@ namespace dt0
 
 		___constexpr20___ property(property<value_type, complete>&& other) noexcept(false)
 		{
-			if (reinterpret_cast<property<value_type, complete>*>(this) == __builtin_addressof(other))
-			{
-				throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
-					std::string(", readonly>: Self-assignment not allowed!"));
-			}
-
 			try
 			{
 				_core = reinterpret_cast<value_type*>(::operator new(sizeof(value_type)));
@@ -910,6 +884,38 @@ namespace dt0
 			out << *prop._core;
 
 			return out;
+		}
+
+		___nodiscard___ bool operator== (const property<value_type, readonly>& prop) const
+		{
+			if (*_core == prop.get())
+				return true;
+
+			return false;
+		}
+
+		___nodiscard___ bool operator== (property<value_type, readonly>&& prop) const noexcept
+		{
+			if (*_core == prop.get())
+				return true;
+
+			return false;
+		}
+
+		___nodiscard___ bool operator== (const property<value_type, complete>& prop) const
+		{
+			if (*_core == prop.get())
+				return true;
+
+			return false;
+		}
+
+		___nodiscard___ bool operator== (property<value_type, complete>&& prop) const noexcept
+		{
+			if (*_core == prop.get())
+				return true;
+
+			return false;
 		}
 
 	private:
