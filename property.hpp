@@ -164,6 +164,49 @@ namespace dt0
 			}
 		}
 
+		___constexpr20___ property(const property<value_type, readonly>& other)
+		{
+			if (reinterpret_cast<const property<value_type, readonly>*>(this) == __builtin_addressof(other))
+			{
+				throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
+					std::string(">: Self-assignment not allowed!"));
+			}
+
+			try
+			{
+				_core = reinterpret_cast<value_type*>(::operator new(sizeof(value_type)));
+			}
+
+			catch (std::bad_alloc _error)
+			{
+				throw;
+			}
+
+			if (std::is_constructible<value_type>::value)
+			{
+				if (std::is_copy_constructible<value_type>::value)
+					::new(_core) value_type(other.get());
+
+				else
+				{
+					throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
+						std::string(">: Can not assign value because type is neither\nconstructible nor copy constructible!"));
+				}
+			}
+
+			else
+			{
+				if (std::is_copy_assignable<value_type>::value)
+					*_core = other.get();
+
+				else
+				{
+					throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
+						std::string(">: Can not assign value because type is not copy assignable!"));
+				}
+			}
+		}
+
 		___constexpr20___ property(property<value_type>&& other) noexcept(false)
 		{
 			if (this == __builtin_addressof(other))
@@ -231,9 +274,26 @@ namespace dt0
 			return *_core;
 		}
 
-		___nodiscard___ value_type& get() const
+		___nodiscard___ value_type&& get() 
 		{
-			return *_core;
+			value_type _temp = std::move(*_core);
+
+			if (std::is_destructible<value_type>::value)
+				_core->~value_type();
+
+			try
+			{
+				::operator delete(_core, sizeof(value_type));
+			}
+
+			catch (std::bad_alloc _error)
+			{
+				throw;
+			}
+
+			_core = nullptr;
+
+			return static_cast<value_type&&>(_temp);
 		}
 
 		value_type const* const operator-> () const
@@ -356,6 +416,66 @@ namespace dt0
 		const property<value_type>& operator= (const property<value_type>& other)
 		{
 			if (this == __builtin_addressof(other))
+			{
+				throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
+					std::string(">: Self-assignment not allowed!"));
+			}
+
+			if (_core == nullptr)
+			{
+				try
+				{
+					_core = reinterpret_cast<value_type*>(::operator new(sizeof(value_type)));
+				}
+
+				catch (std::bad_alloc _error)
+				{
+					throw;
+				}
+
+				if (std::is_constructible<value_type>::value)
+				{
+					if (std::is_copy_constructible<value_type>::value)
+						::new(_core) value_type(other.get());
+
+					else
+					{
+						throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
+							std::string(">: Can not assign value because type is neither\nconstructible nor copy constructible!"));
+					}
+				}
+
+				else
+				{
+					if (std::is_copy_assignable<value_type>::value)
+						*_core = other.get();
+
+					else
+					{
+						throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
+							std::string(">: Can not assign value because type is not copy assignable!"));
+					}
+				}
+			}
+
+			else
+			{
+				if (std::is_copy_assignable<value_type>::value)
+					*_core = other.get();
+
+				else
+				{
+					throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
+						std::string(">: Can not assign value because type is not copy assignable!"));
+				}
+			}
+
+			return *this;
+		}
+
+		const property<value_type>& operator= (const property<value_type, readonly>& other)
+		{
+			if (reinterpret_cast<const property<value_type, readonly>*>(this) == __builtin_addressof(other))
 			{
 				throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
 					std::string(">: Self-assignment not allowed!"));
@@ -632,7 +752,7 @@ namespace dt0
 
 		___constexpr20___ property(const property<value_type, complete>& other)
 		{
-			if (reinterpret_cast<property<value_type, complete>*>(this) == __builtin_addressof(other))
+			if (reinterpret_cast<const property<value_type, complete>*>(this) == __builtin_addressof(other))
 			{
 				throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
 					std::string(", readonly>: Self-assignment not allowed!"));
@@ -776,11 +896,6 @@ namespace dt0
 		}
 
 		___nodiscard___ const value_type& get() const
-		{
-			return *_core;
-		}
-
-		___nodiscard___ value_type& get() const
 		{
 			return *_core;
 		}
