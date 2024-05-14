@@ -12,7 +12,7 @@
 /* This property class is created to emulate the C#-style properties
 To use a regular property that is get and set then just use dt0::property<insert-type>
 To use a read only property use dt0::property<insert-type, dt0::readonly>
-(this is essentially a const property, once initialized it is read only)*/
+(this is essentially a const property, once initialized it is read only) */
 
 namespace dt0
 {
