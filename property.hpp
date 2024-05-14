@@ -235,7 +235,12 @@ namespace dt0
 		{
 			return *_core;
 		}
-	
+
+		value_type const* const operator-> () const
+		{
+			return _core;
+		}
+		
 		const property<value_type>& operator= (const value_type& other)
 		{	
 			if (_core == nullptr)
@@ -466,11 +471,6 @@ namespace dt0
 			}
 	
 			return *this;
-		}
-	
-		value_type const* const operator-> () const
-		{
-			return _core;
 		}
 	
 		friend std::ostream& operator<< (std::ostream& out, const property<value_type>& prop)
