@@ -230,6 +230,11 @@ namespace dt0
 		{
 			return *_core;
 		}
+
+		___nodiscard___ value_type& get() const
+		{
+			return *_core;
+		}
 	
 		const property<value_type>& operator= (const value_type& other)
 		{	
