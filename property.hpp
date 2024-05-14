@@ -779,7 +779,12 @@ namespace dt0
 		{
 			return *_core;
 		}
-	
+
+		___nodiscard___ value_type& get() const
+		{
+			return *_core;
+		}
+
 		value_type const* const operator-> () const
 		{
 			return _core;
