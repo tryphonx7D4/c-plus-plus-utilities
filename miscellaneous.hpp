@@ -6,10 +6,10 @@
 
 namespace dt0
 {
-	template <typename drain_type>
-	___nodiscard___ ___constexpr___ drain_type&& move(const drain_type& _val)
+	template <typename M>
+	___nodiscard___ ___constexpr___ M&& const_move(const M& val) noexcept
 	{
-		return static_cast<drain_type&&>(const_cast<drain_type&>(_val));
+		return static_cast<M&&>(const_cast<M&>(val));
 	}
 }
 
