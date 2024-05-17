@@ -33,6 +33,14 @@ namespace dt0
 
 		___constexpr20___ get_accessor() noexcept : _core(nullptr) {}
 
+		___constexpr20___ get_accessor(const get_accessor<value_type, return_type, parameter_type, function_type>&) = delete;
+		
+		___constexpr20___ get_accessor(get_accessor<value_type, return_type, parameter_type, function_type>&&) noexcept = delete;
+
+		const get_accessor<value_type, return_type, parameter_type, function_type>& operator= (const get_accessor<value_type, return_type, parameter_type, function_type>&) = delete;
+
+		const get_accessor<value_type, return_type, parameter_type, function_type>& operator= (get_accessor<value_type, return_type, parameter_type, function_type>&) noexcept = delete;
+
 		___constexpr20___ get_accessor(std::nullptr_t) noexcept : _core(nullptr) {}
 
 		~get_accessor() noexcept = default;
