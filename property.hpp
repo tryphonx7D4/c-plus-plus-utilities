@@ -9,6 +9,10 @@
 #include "basic_error.hpp"
 #include "miscellaneous.hpp"
 
+/* The classes below are created in order to emulate the C# property.
+To use a standard get and set property just use  dt0::property<value_type, getter_return_type, getter_parameter_type, getter_function_type>;
+To use a read-only/const/get-only propery use the dt0::const_property<value_type, getter_return_type, getter_parameter_type, getter_function_type> */
+
 namespace dt0
 {
 	template <typename A, typename R = const A&, typename P = const A&, typename F = R(P)>
