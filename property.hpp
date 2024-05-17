@@ -19,7 +19,7 @@ namespace dt0
 		using parameter_type = P;
 		using function_type = F;
 
-		function_type* getter{};
+		function_type* getter{ nullptr };
 	};
 
 	template <typename A, typename R = const A&, typename P = const A&, typename F = R(P)>
@@ -41,12 +41,22 @@ namespace dt0
 		{
 			_core = other.getter;
 
+			if (_core == nullptr)
+			{
+				_core = std::move([](parameter_type _value) -> return_type { return _value; });
+			}
+
 			return *this;
 		}
 
 		const get_accessor<value_type, return_type, parameter_type, function_type>& operator= (get<value_type, return_type, parameter_type>&& other) noexcept
 		{
 			_core = std::move(other.getter);
+
+			if (_core == nullptr)
+			{
+				_core = std::move([](parameter_type _value) -> return_type { return _value; });
+			}
 
 			return *this;
 		}
