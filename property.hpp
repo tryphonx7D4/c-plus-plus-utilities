@@ -57,7 +57,7 @@ namespace dt0
 			return *this;
 		}
 
-		const get_accessor<value_type, return_type, parameter_type, function_type>& operator= (get<value_type, return_type, parameter_type>&& other) noexcept
+		const get_accessor<value_type, return_type, parameter_type, function_type>& operator= (get<value_type, return_type, parameter_type>&& other) noexcept(false)
 		{
 			_core = std::move(other.getter);
 
@@ -154,8 +154,6 @@ namespace dt0
 		using return_type = R;
 		using parameter_type = P;
 		using getter_type = G;
-
-		___constexpr20___ property() noexcept = default;
 
 		___constexpr20___ property(get<value_type, return_type, parameter_type>&& getter_init, set<value_type>&& setter_init) noexcept
 		{
@@ -425,6 +423,187 @@ namespace dt0
 		value_type _core;
 		get_accessor<value_type, return_type, parameter_type, getter_type> _getter_core;
 		set_accessor<value_type> _setter_core;
+	};
+
+	template <typename A, typename R = const A&>
+	class const_property
+	{
+	public:
+		using value_type = A;
+		using return_type = R;
+		using parameter_type = const A&;
+
+		___constexpr20___ const_property(get<value_type, return_type, parameter_type>&& getter_init) noexcept
+		{
+			_core = value_type();
+			_getter_core = std::move(getter_init);
+		}
+
+		~const_property() noexcept = default;
+
+		___nodiscard___ return_type value()
+		{
+			return _getter_core(_core);
+		}
+
+		const value_type& operator-> () const
+		{
+			return _core;
+		}
+
+		const const_property& operator= (const value_type& other)
+		{
+			if (_initialized == false)
+			{
+				_core = other;
+				_initialized = true;
+			}
+
+			else throw basic_error("Can not change const property!");
+
+			return *this;
+		}
+
+		const const_property& operator= (value_type&& other) noexcept(false)
+		{
+			if (_initialized == false)
+			{
+				_core = std::move(other);
+				_initialized = true;
+			}
+
+			else throw basic_error("Can not change const property!");
+
+			return *this;
+		}
+
+		const const_property& operator= (const const_property& other)
+		{
+			if (_initialized == false)
+			{
+				_core = other.value();
+				_initialized = true;
+			}
+
+			else throw basic_error("Can not change const property!");
+
+			return *this;
+		}
+
+		___nodiscard___ bool operator== (const value_type& other) const
+		{
+			if (_core == other)
+				return true;
+
+			return false;
+		}
+
+		___nodiscard___ bool operator== (const const_property& other) const
+		{
+			if (_core == other.value())
+				return true;
+
+			return false;
+		}
+
+		___nodiscard___ bool operator!= (const value_type& other) const
+		{
+			if (_core != other)
+				return true;
+
+			return false;
+		}
+
+		___nodiscard___ bool operator!= (const const_property& other) const
+		{
+			if (_core != other.value())
+				return true;
+
+			return false;
+		}
+
+		___nodiscard___ bool operator> (const value_type& other) const
+		{
+			if (_core > other)
+				return true;
+
+			return false;
+		}
+
+		___nodiscard___ bool operator> (const const_property& other) const
+		{
+			if (_core > other.value())
+				return true;
+
+			return false;
+		}
+
+		___nodiscard___ bool operator< (const value_type& other) const
+		{
+			if (_core < other)
+				return true;
+
+			return false;
+		}
+
+		___nodiscard___ bool operator< (const const_property& other) const
+		{
+			if (_core < other.value())
+				return true;
+
+			return false;
+		}
+
+#ifdef _WIN64
+	#if _MSVC_LANG > 201703L
+		___nodiscard___ bool operator<=> (const value_type& other) const
+		{
+			if (_core <=> other)
+				return true;
+
+			return false;
+		}
+
+		___nodiscard___ bool operator<=> (const const_property& other) const
+		{
+			if (_core <=> other.value())
+				return true;
+
+			return false;
+		}
+
+	#endif
+#else
+	#if __cplusplus > 201703L
+		___nodiscard___ bool operator<=> (const value_type& other) const
+		{
+			if (*_core <=> other)
+				return true;
+
+			return false;
+		}
+
+		___nodiscard___ bool operator<=> (const const_property& other) const
+		{
+			if (_core <=> other.value())
+				return true;
+
+			return false;
+		}
+	#endif
+#endif
+
+		friend std::ostream& operator<< (std::ostream& output_stream, const_property& other)
+		{
+			output_stream << other._getter_core(other._core);
+
+			return output_stream;
+		}
+
+	private:
+		value_type _core;
+		get_accessor<value_type, return_type, parameter_type> _getter_core;
+		bool _initialized = false;
 	};
 }
 
