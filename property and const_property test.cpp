@@ -2,6 +2,8 @@
 #include <string>
 #include "property.hpp"
 
+/* This was tested on MSVC only and works for C++14, C++17, C++20 standards (haven't tested for other standards */
+
 int main()
 {
 	dt0::property<int, int, int&> A { 2, 
