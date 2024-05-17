@@ -47,15 +47,32 @@ namespace dt0
 
 		___constexpr20___ get_accessor() noexcept : _core(nullptr) {}
 
+		___constexpr20___ get_accessor(std::nullptr_t) noexcept : _core(nullptr) {}
+
 		___constexpr20___ get_accessor(const get_accessor<value_type, return_type, parameter_type, function_type>&) = delete;
-		
 		___constexpr20___ get_accessor(get_accessor<value_type, return_type, parameter_type, function_type>&&) noexcept = delete;
-
 		const get_accessor<value_type, return_type, parameter_type, function_type>& operator= (const get_accessor<value_type, return_type, parameter_type, function_type>&) = delete;
-
 		const get_accessor<value_type, return_type, parameter_type, function_type>& operator= (get_accessor<value_type, return_type, parameter_type, function_type>&) noexcept = delete;
 
-		___constexpr20___ get_accessor(std::nullptr_t) noexcept : _core(nullptr) {}
+		___constexpr20___ get_accessor(const get<value_type, return_type, parameter_type>& other)
+		{
+			_core = other.getter;
+
+			if (_core == nullptr)
+			{
+				_core = [](parameter_type _value) -> return_type { return _value; };
+			}
+		}
+
+		___constexpr20___ get_accessor(get<value_type, return_type, parameter_type>&& other) noexcept(false)
+		{
+			_core = std::move(other.getter);
+
+			if (_core == nullptr)
+			{
+				_core = [](parameter_type _value) -> return_type { return _value; };
+			}
+		}
 
 		~get_accessor() noexcept = default;
 
@@ -110,6 +127,35 @@ namespace dt0
 		___constexpr20___ set_accessor() noexcept : _copy_core(nullptr), _move_core(nullptr) {}
 
 		___constexpr20___ set_accessor(std::nullptr_t) noexcept : _copy_core(nullptr), _move_core(nullptr) {}
+
+		___constexpr20___ set_accessor(const set_accessor&) = delete;
+		___constexpr20___ set_accessor(set_accessor&&) noexcept = delete;
+		const set_accessor& operator= (const set_accessor&) = delete;
+		const set_accessor& operator= (set_accessor&&) noexcept = delete;
+
+		___constexpr20___ set_accessor(const set<value_type>& other)
+		{
+			_copy_core = other.copy_setter;
+			_move_core = other.move_setter;
+
+			if ((_copy_core == nullptr) && (_move_core == nullptr))
+			{
+				_copy_core = [](value_type& _left, const value_type& _right) { _left = _right; };
+				_move_core = [](value_type& _left, value_type&& _right) noexcept17{ _left = std::move(_right); };
+			}
+		}
+		
+		___constexpr20___ set_accessor(set<value_type>&& other) noexcept
+		{
+			_copy_core = std::move(other.copy_setter);
+			_move_core = std::move(other.move_setter);
+
+			if ((_copy_core == nullptr) && (_move_core == nullptr))
+			{
+				_copy_core = [](value_type& _left, const value_type& _right) { _left = _right; };
+				_move_core = [](value_type& _left, value_type&& _right) noexcept17{ _left = std::move(_right); };
+			}
+		}
 
 		~set_accessor() noexcept = default;
 
