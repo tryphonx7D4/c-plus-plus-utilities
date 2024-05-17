@@ -10,7 +10,7 @@ int main()
 		},
 		dt0::set<int>{ 
 			[](int& x, const int& y) {x = 2 * y; }, 
-			[](int& x, int&& y) noexcept {x = std::move(y * 3); 
+			[](int& x, int&& y) noexcept17 {x = std::move(y * 3);
 		}} 
 	};
 
