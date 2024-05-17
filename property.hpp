@@ -453,9 +453,67 @@ namespace dt0
 			_getter_core = std::move(getter_init);
 		}
 
+		___constexpr20___ const_property(const value_type& other, get<value_type, return_type, parameter_type>&& getter_init) noexcept
+		{
+			_core = other;
+			_initialized = true;
+			_getter_core = std::move(getter_init);
+		}
+
+		___constexpr20___ const_property(value_type&& other, get<value_type, return_type, parameter_type>&& getter_init) noexcept
+		{
+			_core = std::move(other);
+			_initialized = true;
+			_getter_core = std::move(getter_init);
+		}
+
+
+		___constexpr20___ const_property(const const_property& other, get<value_type, return_type, parameter_type>&& getter_init) noexcept
+		{
+			_core = other.value();
+			_initialized = true;
+			_getter_core = std::move(getter_init);
+		}
+
+
+		___constexpr20___ const_property(const_property&& other, get<value_type, return_type, parameter_type>&& getter_init) noexcept
+		{
+			_core = const_move(other.value());
+			_initialized = true;
+			_getter_core = std::move(getter_init);
+		}
+
+		___constexpr20___ const_property(const value_type& other) noexcept
+		{
+			_core = other;
+			_initialized = true;
+			_getter_core = std::move(get<value_type, return_type, parameter_type>{});
+		}
+
+		___constexpr20___ const_property(value_type&& other) noexcept
+		{
+			_core = std::move(other);
+			_initialized = true;
+			_getter_core = std::move(get<value_type, return_type, parameter_type>{});
+		}
+
+		___constexpr20___ const_property(const const_property& other) noexcept
+		{
+			_core = other.value();
+			_initialized = true;
+			_getter_core = std::move(get<value_type, return_type, parameter_type>{});
+		}
+
+		___constexpr20___ const_property(const_property&& other) noexcept
+		{
+			_core = const_move(other.value());
+			_initialized = true;
+			_getter_core = std::move(get<value_type, return_type, parameter_type>{});
+		}
+
 		~const_property() noexcept = default;
 
-		___nodiscard___ return_type value()
+		___nodiscard___ return_type value() const
 		{
 			return _getter_core(_core);
 		}
