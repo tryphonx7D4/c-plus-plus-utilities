@@ -51,7 +51,7 @@ namespace dt0
 
 			if (_core == nullptr)
 			{
-				_core = std::move([](parameter_type _value) -> return_type { return _value; });
+				_core = [](parameter_type _value) -> return_type { return _value; };
 			}
 
 			return *this;
@@ -63,7 +63,7 @@ namespace dt0
 
 			if (_core == nullptr)
 			{
-				_core = std::move([](parameter_type _value) -> return_type { return _value; });
+				_core = [](parameter_type _value) -> return_type { return _value; };
 			}
 
 			return *this;
@@ -84,7 +84,7 @@ namespace dt0
 		using value_type = A;
 
 		void(*copy_setter)(value_type&, const value_type&) { nullptr };
-		void(*move_setter)(value_type&, value_type&&) noexcept { nullptr };
+		void(*move_setter)(value_type&, value_type&&) noexcept17 { nullptr };
 	};
 
 	template <typename A>
@@ -107,7 +107,7 @@ namespace dt0
 			if ((_copy_core == nullptr) && (_move_core == nullptr))
 			{
 				_copy_core = [](value_type& _left, const value_type& _right) { _left = _right; };
-				_move_core = [](value_type& _left, value_type&& _right) noexcept { _left = std::move(_right); };
+				_move_core = [](value_type& _left, value_type&& _right) noexcept17{ _left = std::move(_right); };
 			}
 
 			return *this;
@@ -121,7 +121,7 @@ namespace dt0
 			if ((_copy_core == nullptr) && (_move_core == nullptr))
 			{
 				_copy_core = [](value_type& _left, const value_type& _right) { _left = _right; };
-				_move_core = [](value_type& _left, value_type&& _right) noexcept { _left = std::move(_right); };
+				_move_core = [](value_type& _left, value_type&& _right) noexcept17{ _left = std::move(_right); };
 			}
 
 			return *this;
@@ -143,7 +143,7 @@ namespace dt0
 
 	private:
 		void(*_copy_core)(value_type&, const value_type&);
-		void(*_move_core)(value_type&, value_type&&) noexcept;
+		void(*_move_core)(value_type&, value_type&&) noexcept17;
 	};
 
 	template <typename A, typename R = const A&, typename P = const A&, typename G = R(P)>
