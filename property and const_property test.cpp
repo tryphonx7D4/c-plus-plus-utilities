@@ -31,7 +31,7 @@ int main()
 {
 	dt0::property<int, int, int&> A { 2, 
 		dt0::get<int, int, int&> { 
-		[](int& x) -> int { return x * 2; } 
+			[](int& x) -> int { return x * 2; } 
 		},
 		dt0::set<int>{ 
 			[](int& x, const int& y) {x = 2 * y; }, 
