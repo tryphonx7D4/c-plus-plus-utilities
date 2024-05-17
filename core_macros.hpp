@@ -81,4 +81,20 @@
 	#endif
 #endif
 
+#ifndef noexcept17
+	#ifdef _WIN64
+		#if _MSVC_LANG > 201402L
+			#define noexcept17 noexcept
+		#else
+			#define noexcept17
+		#endif
+	#else
+		#if __cplusplus > 201402L
+			#define noexcept17 noexcept
+		#else
+			#define noexcept17
+		#endif
+	#endif
+#endif
+
 #endif /* CORE_MACROS_HPP */
