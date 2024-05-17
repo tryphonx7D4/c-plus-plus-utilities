@@ -1,925 +1,412 @@
 #ifndef PROPERTY_HPP
 #define PROPERTY_HPP
 
+#include <ostream>
+#include <istream>
 #include <type_traits>
-#include <utility>
 #include <typeinfo>
-#include <new>
-#include <iostream>
 #include "core_macros.hpp"
 #include "basic_error.hpp"
-
-/* This property class is created to emulate the C#-style properties
-To use a regular property that is get and set then just use dt0::property<insert-type>
-To use a read only property use dt0::property<insert-type, dt0::readonly>
-(this is essentially a const property, once initialized it is read only) */
+#include "miscellaneous.hpp"
 
 namespace dt0
 {
-	template <typename, typename>
-	class property;
+	template <typename A, typename R = const A&, typename P = const A&, typename F = R(P)>
+	struct get
+	{
+		using value_type = A;
+		using return_type = R;
+		using parameter_type = P;
+		using function_type = F;
 
-	struct complete {};
+		function_type* getter{};
+	};
 
-	struct readonly {};
+	template <typename A, typename R = const A&, typename P = const A&, typename F = R(P)>
+	class get_accessor
+	{
+	public:
+		using value_type = A;
+		using return_type = R;
+		using parameter_type = P;
+		using function_type = F;
 
-	template <typename P, typename I = complete>
+		___constexpr20___ get_accessor() noexcept : _core(nullptr) {}
+
+		___constexpr20___ get_accessor(std::nullptr_t) noexcept : _core(nullptr) {}
+
+		~get_accessor() noexcept = default;
+
+		const get_accessor<value_type, return_type, parameter_type, function_type>& operator= (const get<value_type, return_type, parameter_type>& other)
+		{
+			_core = other.getter;
+
+			return *this;
+		}
+
+		const get_accessor<value_type, return_type, parameter_type, function_type>& operator= (get<value_type, return_type, parameter_type>&& other) noexcept
+		{
+			_core = std::move(other.getter);
+
+			return *this;
+		}
+
+		___nodiscard___ return_type operator() (parameter_type _value)
+		{
+			return _core(_value);
+		}
+
+	private:
+		function_type* _core;
+	};
+
+	template <typename A>
+	struct set
+	{
+		using value_type = A;
+
+		void(*copy_setter)(value_type&, const value_type&) { nullptr };
+		void(*move_setter)(value_type&, value_type&&) noexcept { nullptr };
+	};
+
+	template <typename A>
+	class set_accessor
+	{
+	public:
+		using value_type = A;
+
+		___constexpr20___ set_accessor() noexcept : _copy_core(nullptr), _move_core(nullptr) {}
+
+		___constexpr20___ set_accessor(std::nullptr_t) noexcept : _copy_core(nullptr), _move_core(nullptr) {}
+
+		~set_accessor() noexcept = default;
+
+		const set_accessor& operator= (const set<value_type>& other)
+		{
+			_copy_core = other.copy_setter;
+			_move_core = other.move_setter;
+
+			if ((_copy_core == nullptr) && (_move_core == nullptr))
+			{
+				_copy_core = [](value_type& _left, const value_type& _right) { _left = _right; };
+				_move_core = [](value_type& _left, value_type&& _right) noexcept { _left = std::move(_right); };
+			}
+
+			return *this;
+		}
+
+		const set_accessor& operator= (set<value_type>&& other) noexcept
+		{
+			_copy_core = std::move(other.copy_setter);
+			_move_core = std::move(other.move_setter);
+
+			if ((_copy_core == nullptr) && (_move_core == nullptr))
+			{
+				_copy_core = [](value_type& _left, const value_type& _right) { _left = _right; };
+				_move_core = [](value_type& _left, value_type&& _right) noexcept { _left = std::move(_right); };
+			}
+
+			return *this;
+		}
+
+		const set_accessor& operator() (value_type& left_value, const value_type& right_value) const
+		{
+			_copy_core(left_value, right_value);
+
+			return *this;
+		}
+
+		const set_accessor& operator() (value_type& left_value, value_type&& right_value) const noexcept
+		{
+			_move_core(left_value, std::move(right_value));
+
+			return *this;
+		}
+
+	private:
+		void(*_copy_core)(value_type&, const value_type&);
+		void(*_move_core)(value_type&, value_type&&) noexcept;
+	};
+
+	template <typename A, typename R = const A&, typename P = const A&, typename G = R(P)>
 	class property
 	{
 	public:
-		using value_type = P;
+		using value_type = A;
+		using return_type = R;
+		using parameter_type = P;
+		using getter_type = G;
 
-		___constexpr20___ property() noexcept(false)
+		___constexpr20___ property() noexcept = default;
+
+		___constexpr20___ property(get<value_type, return_type, parameter_type>&& getter_init, set<value_type>&& setter_init) noexcept
 		{
-			try
-			{
-				_core = reinterpret_cast<value_type*>(::operator new(sizeof(value_type)));
-			}
-
-			catch (std::bad_alloc _error)
-			{
-				throw;
-			}
-
-			if (std::is_constructible<value_type>::value)
-				::new(_core) value_type();
+			_getter_core = std::move(getter_init);
+			_setter_core = std::move(setter_init);
 		}
 
-		___constexpr20___ property(std::nullptr_t) noexcept : _core(nullptr) {}
-
-		___constexpr20___ property(const value_type& other) 
+		___constexpr20___ property(set<value_type>&& setter_init, get<value_type, return_type, parameter_type>&& getter_init) noexcept
 		{
-			try
-			{
-				_core = reinterpret_cast<value_type*>(::operator new(sizeof(value_type)));
-			}
-
-			catch (std::bad_alloc _error)
-			{
-				throw;
-			}
-
-			if (std::is_constructible<value_type>::value)
-			{
-				if (std::is_copy_constructible<value_type>::value)
-					::new(_core) value_type(other);
-
-				else
-				{
-					throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
-						std::string(">: Can not assign value because type is neither\nconstructible nor copy constructible!"));
-				}
-			}
-
-			else
-			{
-				if (std::is_copy_assignable<value_type>::value)
-					*_core = other;
-
-				else
-				{
-					throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
-						std::string(">: Can not assign value because type is not copy assignable!"));
-				}
-			}
+			_setter_core = std::move(setter_init);
+			_getter_core = std::move(getter_init);
 		}
 
-		___constexpr20___ property(value_type&& other) noexcept(false)
+		___constexpr20___ property(const value_type& other, get<value_type, return_type, parameter_type>&& getter_init, set<value_type>&& setter_init) noexcept
 		{
-			try
-			{
-				_core = reinterpret_cast<value_type*>(::operator new(sizeof(value_type)));
-			}
+			_core = other;
 
-			catch (std::bad_alloc _error)
-			{
-				throw;
-			}
-
-			if (std::is_constructible<value_type>::value)
-			{
-				if (std::is_move_constructible<value_type>::value)
-					::new(_core) value_type(std::move(other));
-
-				else
-				{
-					throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
-						std::string(">: Can not assign value because type is neither\nconstructible nor move constructible!"));
-				}
-			}
-
-			else
-			{
-				if (std::is_move_assignable<value_type>::value)
-					*_core = std::move(other);
-
-				else
-				{
-					throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
-						std::string(">: Can not assign value because type is not move assignable!"));
-				}
-			}
+			_getter_core = std::move(getter_init);
+			_setter_core = std::move(setter_init);
 		}
 
-		___constexpr20___ property(const property<value_type>& other)
+		___constexpr20___ property(const value_type& other, set<value_type>&& setter_init, get<value_type, return_type, parameter_type>&& getter_init) noexcept
 		{
-			if (this == __builtin_addressof(other))
-			{
-				throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
-					std::string(">: Self-assignment not allowed!"));
-			}
+			_core = other;
 
-			try
-			{
-				_core = reinterpret_cast<value_type*>(::operator new(sizeof(value_type)));
-			}
-
-			catch (std::bad_alloc _error)
-			{
-				throw;
-			}
-
-			if (std::is_constructible<value_type>::value)
-			{
-				if (std::is_copy_constructible<value_type>::value)
-					::new(_core) value_type(other.get());
-
-				else
-				{
-					throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
-						std::string(">: Can not assign value because type is neither\nconstructible nor copy constructible!"));
-				}
-			}
-
-			else
-			{
-				if (std::is_copy_assignable<value_type>::value)
-					*_core = other.get();
-
-				else
-				{
-					throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
-						std::string(">: Can not assign value because type is not copy assignable!"));
-				}
-			}
+			_setter_core = std::move(setter_init);
+			_getter_core = std::move(getter_init);
 		}
 
-		___constexpr20___ property(const property<value_type, readonly>& other)
+		___constexpr20___ property(value_type&& other, get<value_type, return_type, parameter_type>&& getter_init, set<value_type>&& setter_init) noexcept
 		{
-			try
-			{
-				_core = reinterpret_cast<value_type*>(::operator new(sizeof(value_type)));
-			}
+			_core = std::move(other);
 
-			catch (std::bad_alloc _error)
-			{
-				throw;
-			}
-
-			if (std::is_constructible<value_type>::value)
-			{
-				if (std::is_copy_constructible<value_type>::value)
-					::new(_core) value_type(other.get());
-
-				else
-				{
-					throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
-						std::string(">: Can not assign value because type is neither\nconstructible nor copy constructible!"));
-				}
-			}
-
-			else
-			{
-				if (std::is_copy_assignable<value_type>::value)
-					*_core = other.get();
-
-				else
-				{
-					throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
-						std::string(">: Can not assign value because type is not copy assignable!"));
-				}
-			}
+			_getter_core = std::move(getter_init);
+			_setter_core = std::move(setter_init);
 		}
 
-		___constexpr20___ property(property<value_type>&& other) noexcept(false)
+		___constexpr20___ property(value_type&& other, set<value_type>&& setter_init, get<value_type, return_type, parameter_type>&& getter_init) noexcept
 		{
-			try
-			{
-				_core = reinterpret_cast<value_type*>(::operator new(sizeof(value_type)));
-			}
+			_core = std::move(other);
 
-			catch (std::bad_alloc _error)
-			{
-				throw;
-			}
-
-			if (std::is_constructible<value_type>::value)
-			{
-				if (std::is_move_constructible<value_type>::value)
-					::new(_core) value_type(std::move(other.get()));
-
-				else
-				{
-					throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
-						std::string(">: Can not assign value because type is neither\nconstructible nor move constructible!"));
-				}
-			}
-
-			else
-			{
-				if (std::is_move_assignable<value_type>::value)
-					*_core = std::move(other.get());
-
-				else
-				{
-					throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
-						std::string(">: Can not assign value because type is not move assignable!"));
-				}
-			}
+			_setter_core = std::move(setter_init);
+			_getter_core = std::move(getter_init);
 		}
 
-		~property() noexcept(false)
+		___constexpr20___ property(const property& other, get<value_type, return_type, parameter_type>&& getter_init, set<value_type>&& setter_init) noexcept
 		{
-			if (_core != nullptr)
-			{
-				if (std::is_destructible<value_type>::value)
-					_core->~value_type();
+			_core = other.value();
 
-				try
-				{
-					::operator delete(_core, sizeof(value_type));
-				}
-
-				catch (std::bad_alloc _error)
-				{
-					throw;
-				}
-			}
+			_getter_core = std::move(getter_init);
+			_setter_core = std::move(setter_init);
 		}
 
-		___nodiscard___ const value_type& get() const
+		___constexpr20___ property(const property& other, set<value_type>&& setter_init, get<value_type, return_type, parameter_type>&& getter_init) noexcept
 		{
-			return *_core;
+			_core = other.value();
+
+			_setter_core = std::move(setter_init);
+			_getter_core = std::move(getter_init);
 		}
 
-		value_type const* const operator-> () const
+		___constexpr20___ property(property&& other, get<value_type, return_type, parameter_type>&& getter_init, set<value_type>&& setter_init) noexcept
+		{
+			_core = const_move(other.value());
+
+			_getter_core = std::move(getter_init);
+			_setter_core = std::move(setter_init);
+		}
+
+		___constexpr20___ property(property&& other, set<value_type>&& setter_init, get<value_type, return_type, parameter_type>&& getter_init) noexcept
+		{
+			_core = const_move(other.value());
+
+			_setter_core = std::move(setter_init);
+			_getter_core = std::move(getter_init);
+		}
+
+		___constexpr20___ property(const value_type& other) noexcept
+		{
+			_core = other;
+
+			_getter_core = std::move(get<value_type, return_type, parameter_type>{});
+			_setter_core = std::move(set<value_type>{});
+		}
+
+		___constexpr20___ property(value_type&& other) noexcept
+		{
+			_core = std::move(other);
+
+			_getter_core = std::move(get<value_type, return_type, parameter_type>{});
+			_setter_core = std::move(set<value_type>{});
+		}
+
+		___constexpr20___ property(const property& other) noexcept
+		{
+			_core = other.value();
+
+			_getter_core = std::move(get<value_type, return_type, parameter_type>{});
+			_setter_core = std::move(set<value_type>{});
+		}
+
+		___constexpr20___ property(property&& other) noexcept
+		{
+			_core = const_move(other.value());
+
+			_getter_core = std::move(get<value_type, return_type, parameter_type>{});
+			_setter_core = std::move(set<value_type>{});
+		}
+
+		~property() noexcept = default;
+
+		___nodiscard___ return_type value()
+		{
+			return _getter_core(_core);
+		}
+
+		const value_type& operator-> () const
 		{
 			return _core;
 		}
 
-		const property<value_type>& operator= (const value_type& other)
-		{	
-			if (_core == nullptr)
-			{
-				try
-				{
-					_core = reinterpret_cast<value_type*>(::operator new(sizeof(value_type)));
-				}
-
-				catch (std::bad_alloc _error)
-				{
-					throw;
-				}
-
-				if (std::is_constructible<value_type>::value)
-				{
-					if(std::is_copy_constructible<value_type>::value)
-						::new(_core) value_type(other);
-
-					else
-					{
-						throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
-							std::string(">: Can not assign value because type is neither\nconstructible nor copy constructible!"));
-					}
-				}
-
-				else
-				{
-					if(std::is_copy_assignable<value_type>::value)
-						*_core = other;
-
-					else
-					{
-						throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
-							std::string(">: Can not assign value because type is not copy assignable!"));
-					}
-				}
-			}
-
-			else
-			{
-				if (std::is_copy_assignable<value_type>::value)
-				{
-					*_core = other;
-				}
-
-				else
-				{
-					throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
-						std::string(">: Can not assign value because type is not copy assignable!"));
-				}
-			}
+		const property& operator= (const value_type& other)
+		{
+			_setter_core(_core, other);
 
 			return *this;
 		}
 
-		const property<value_type>& operator= (value_type&& other) noexcept(false)
+		const property& operator= (value_type&& other) noexcept
 		{
-			if (_core == nullptr)
-			{
-				try
-				{
-					_core = reinterpret_cast<value_type*>(::operator new(sizeof(value_type)));
-				}
-
-				catch (std::bad_alloc _error)
-				{
-					throw;
-				}
-
-				if (std::is_constructible<value_type>::value)
-				{
-					if (std::is_move_constructible<value_type>::value)
-						::new(_core) value_type(std::move(other));
-
-					else
-					{
-						throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
-							std::string(">: Can not assign value because type is neither\nconstructible nor move constructible!"));
-					}
-				}
-
-				else
-				{
-					if (std::is_move_assignable<value_type>::value)
-						*_core = std::move(other);
-
-					else
-					{
-						throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
-							std::string(">: Can not assign value because type is not move assignable!"));
-					}
-				}
-			}
-
-			else
-			{
-				if (std::is_copy_assignable<value_type>::value)
-				{
-					*_core = std::move(other);
-				}
-
-				else
-				{
-					throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
-						std::string(">: Can not assign value because type is not move assignable!"));
-				}
-			}
+			_setter_core(_core, std::move(other));
 
 			return *this;
 		}
 
-		const property<value_type>& operator= (const property<value_type>& other)
+		const property& operator= (const property& other)
 		{
-			if (this == __builtin_addressof(other))
-			{
-				throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
-					std::string(">: Self-assignment not allowed!"));
-			}
-
-			if (_core == nullptr)
-			{
-				try
-				{
-					_core = reinterpret_cast<value_type*>(::operator new(sizeof(value_type)));
-				}
-
-				catch (std::bad_alloc _error)
-				{
-					throw;
-				}
-
-				if (std::is_constructible<value_type>::value)
-				{
-					if (std::is_copy_constructible<value_type>::value)
-						::new(_core) value_type(other.get());
-
-					else
-					{
-						throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
-							std::string(">: Can not assign value because type is neither\nconstructible nor copy constructible!"));
-					}
-				}
-
-				else
-				{
-					if (std::is_copy_assignable<value_type>::value)
-						*_core = other.get();
-
-					else
-					{
-						throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
-							std::string(">: Can not assign value because type is not copy assignable!"));
-					}
-				}
-			}
-
-			else
-			{
-				if (std::is_copy_assignable<value_type>::value)
-					*_core = other.get();
-
-				else
-				{
-					throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
-						std::string(">: Can not assign value because type is not copy assignable!"));
-				}
-			}
+			_setter_core(_core, other.value());
 
 			return *this;
 		}
 
-		const property<value_type>& operator= (const property<value_type, readonly>& other)
+		const property& operator= (property&& other) noexcept
 		{
-			if (_core == nullptr)
-			{
-				try
-				{
-					_core = reinterpret_cast<value_type*>(::operator new(sizeof(value_type)));
-				}
-
-				catch (std::bad_alloc _error)
-				{
-					throw;
-				}
-
-				if (std::is_constructible<value_type>::value)
-				{
-					if (std::is_copy_constructible<value_type>::value)
-						::new(_core) value_type(other.get());
-
-					else
-					{
-						throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
-							std::string(">: Can not assign value because type is neither\nconstructible nor copy constructible!"));
-					}
-				}
-
-				else
-				{
-					if (std::is_copy_assignable<value_type>::value)
-						*_core = other.get();
-
-					else
-					{
-						throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
-							std::string(">: Can not assign value because type is not copy assignable!"));
-					}
-				}
-			}
-
-			else
-			{
-				if (std::is_copy_assignable<value_type>::value)
-					*_core = other.get();
-
-				else
-				{
-					throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
-						std::string(">: Can not assign value because type is not copy assignable!"));
-				}
-			}
+			_setter_core(_core, const_move(other.value()));
 
 			return *this;
 		}
 
-		const property<value_type>& operator= (property<value_type>&& other) noexcept(false)
+		___nodiscard___ bool operator== (const value_type& other) const
 		{
-			if (_core == nullptr)
-			{
-				try
-				{
-					_core = reinterpret_cast<value_type*>(::operator new(sizeof(value_type)));
-				}
-
-				catch (std::bad_alloc _error)
-				{
-					throw;
-				}
-
-				if (std::is_constructible<value_type>::value)
-				{
-					if (std::is_move_constructible<value_type>::value)
-						::new(_core) value_type(std::move(other.get()));
-
-					else
-					{
-						throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
-							std::string(">: Can not assign value because type is neither\nconstructible nor move constructible!"));
-					}
-				}
-
-				else
-				{
-					if (std::is_move_assignable<value_type>::value)
-						*_core = std::move(other.get());
-
-					else
-					{
-						throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
-							std::string(">: Can not assign value because type is not move assignable!"));
-					}
-				}
-			}
-
-			else
-			{
-				if (std::is_move_assignable<value_type>::value)
-					*_core = std::move(other.get());
-
-				else
-				{
-					throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
-						std::string(">: Can not assign value because type is not move assignable!"));
-				}
-			}
-
-			return *this;
-		}
-
-		friend std::ostream& operator<< (std::ostream& out, const property<value_type>& prop)
-		{
-			out << *prop._core;
-
-			return out;
-		}
-
-		friend std::istream& operator>> (std::istream& in, property<value_type>& prop)
-		{
-			in >> *prop._core;
-
-			return in;
-		}
-
-		___nodiscard___ bool operator== (const property<value_type>& prop) const
-		{
-			if (*_core == prop.get())
+			if (_core == other)
 				return true;
 
 			return false;
 		}
 
-		___nodiscard___ bool operator== (property<value_type>&& prop) const noexcept
+		___nodiscard___ bool operator== (const property& other) const
 		{
-			if (*_core == prop.get())
+			if (_core == other.value())
 				return true;
 
 			return false;
 		}
 
-		___nodiscard___ bool operator== (const property<value_type, readonly>& prop) const
+		___nodiscard___ bool operator!= (const value_type& other) const
 		{
-			if (*_core == prop.get())
+			if (_core != other)
 				return true;
 
 			return false;
 		}
 
-		___nodiscard___ bool operator== (property<value_type, readonly>&& prop) const noexcept
+		___nodiscard___ bool operator!= (const property& other) const
 		{
-			if (*_core == prop.get())
+			if (_core != other.value())
 				return true;
 
 			return false;
+		}
+
+		___nodiscard___ bool operator> (const value_type& other) const
+		{
+			if (_core > other)
+				return true;
+
+			return false;
+		}
+
+		___nodiscard___ bool operator> (const property& other) const
+		{
+			if (_core > other.value())
+				return true;
+
+			return false;
+		}
+
+		___nodiscard___ bool operator< (const value_type& other) const
+		{
+			if (_core < other)
+				return true;
+
+			return false;
+		}
+
+		___nodiscard___ bool operator< (const property& other) const
+		{
+			if (_core < other.value())
+				return true;
+
+			return false;
+		}
+
+#ifdef _WIN64
+	#if _MSVC_LANG > 201703L
+		___nodiscard___ bool operator<=> (const value_type& other) const
+		{
+			if (_core <=> other)
+				return true;
+
+			return false;
+		}
+
+		___nodiscard___ bool operator<=> (const property& other) const
+		{
+			if (_core <=> other.value())
+				return true;
+
+			return false;
+		}
+	#endif
+#else
+	#if __cplusplus > 201703L
+		___nodiscard___ bool operator<=> (const value_type& other) const
+		{
+			if (*_core <=> other)
+				return true;
+
+			return false;
+		}
+
+		___nodiscard___ bool operator<=> (const property& other) const
+		{
+			if (*_core <=> other.value())
+				return true;
+
+			return false;
+		}
+	#endif
+#endif
+
+		friend std::ostream& operator<< (std::ostream& output_stream, property& other)
+		{
+			output_stream << other._getter_core(other._core);
+
+			return output_stream;
+		}
+
+		friend std::istream& operator>> (std::istream& input_stream, property& other)
+		{
+			input_stream >> other._core;
+
+			return input_stream;
 		}
 
 	private:
-		value_type* _core;
-	};
-
-	template <typename P>
-	class property<P, readonly>
-	{
-	public:
-		using value_type = P;
-
-		___constexpr20___ property() noexcept(false)
-		{
-			try
-			{
-				_core = reinterpret_cast<value_type*>(::operator new(sizeof(value_type)));
-			}
-
-			catch (std::bad_alloc _error)
-			{
-				throw;
-			}
-
-			if (std::is_constructible<value_type>::value)
-				::new(_core) value_type();
-		}
-
-		___constexpr20___ property(const value_type& other)
-		{
-			try
-			{
-				_core = reinterpret_cast<value_type*>(::operator new(sizeof(value_type)));
-			}
-
-			catch (std::bad_alloc _error)
-			{
-				throw;
-			}
-
-			if (std::is_constructible<value_type>::value)
-			{
-				if (std::is_copy_constructible<value_type>::value)
-					::new(_core) value_type(other);
-
-				else
-				{
-					throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
-						std::string(", readonly>: Can not assign value because type is neither\nconstructible nor copy constructible!"));
-				}
-			}
-
-			else
-			{
-				if (std::is_copy_assignable<value_type>::value)
-					*_core = other;
-
-				else
-				{
-					throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
-						std::string(", readonly>: Can not assign value because type is not copy assignable!"));
-				}
-			}
-		}
-
-		___constexpr20___ property(value_type&& other) noexcept(false)
-		{
-			try
-			{
-				_core = reinterpret_cast<value_type*>(::operator new(sizeof(value_type)));
-			}
-
-			catch (std::bad_alloc _error)
-			{
-				throw;
-			}
-
-			if (std::is_constructible<value_type>::value)
-			{
-				if (std::is_move_constructible<value_type>::value)
-					::new(_core) value_type(std::move(other));
-
-				else
-				{
-					throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
-						std::string(", readonly>: Can not assign value because type is neither\nconstructible nor move constructible!"));
-				}
-			}
-
-			else
-			{
-				if (std::is_move_assignable<value_type>::value)
-					*_core = std::move(other);
-
-				else
-				{
-					throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
-						std::string(", readonly>: Can not assign value because type is not move assignable!"));
-				}
-			}
-		}
-
-		___constexpr20___ property(const property<value_type, readonly>& other)
-		{
-			if (this == __builtin_addressof(other))
-			{
-				throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
-					std::string(", readonly>: Self-assignment not allowed!"));
-			}
-
-			try
-			{
-				_core = reinterpret_cast<value_type*>(::operator new(sizeof(value_type)));
-			}
-
-			catch (std::bad_alloc _error)
-			{
-				throw;
-			}
-
-			if (std::is_constructible<value_type>::value)
-			{
-				if (std::is_copy_constructible<value_type>::value)
-					::new(_core) value_type(other.get());
-
-				else
-				{
-					throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
-						std::string(", readonly>: Can not assign value because type is neither\nconstructible nor copy constructible!"));
-				}
-			}
-
-			else
-			{
-				if (std::is_copy_assignable<value_type>::value)
-					*_core = other.get();
-
-				else
-				{
-					throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
-						std::string(", readonly>: Can not assign value because type is not copy assignable!"));
-				}
-			}
-		}
-
-		___constexpr20___ property(const property<value_type, complete>& other)
-		{
-			if (reinterpret_cast<const property<value_type, complete>*>(this) == __builtin_addressof(other))
-			{
-				throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
-					std::string(", readonly>: Self-assignment not allowed!"));
-			}
-
-			try
-			{
-				_core = reinterpret_cast<value_type*>(::operator new(sizeof(value_type)));
-			}
-
-			catch (std::bad_alloc _error)
-			{
-				throw;
-			}
-
-			if (std::is_constructible<value_type>::value)
-			{
-				if (std::is_copy_constructible<value_type>::value)
-					::new(_core) value_type(other.get());
-
-				else
-				{
-					throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
-						std::string(", readonly>: Can not assign value because type is neither\nconstructible nor copy constructible!"));
-				}
-			}
-
-			else
-			{
-				if (std::is_copy_assignable<value_type>::value)
-					*_core = other.get();
-
-				else
-				{
-					throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
-						std::string(", readonly>: Can not assign value because type is not copy assignable!"));
-				}
-			}
-		}
-
-		___constexpr20___ property(property<value_type, readonly>&& other) noexcept(false)
-		{
-			try
-			{
-				_core = reinterpret_cast<value_type*>(::operator new(sizeof(value_type)));
-			}
-
-			catch (std::bad_alloc _error)
-			{
-				throw;
-			}
-
-			if (std::is_constructible<value_type>::value)
-			{
-				if (std::is_move_constructible<value_type>::value)
-					::new(_core) value_type(std::move(other.get()));
-
-				else
-				{
-					throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
-						std::string(", readonly>: Can not assign value because type is neither\nconstructible nor move constructible!"));
-				}
-			}
-
-			else
-			{
-				if (std::is_move_assignable<value_type>::value)
-					*_core = std::move(other.get());
-
-				else
-				{
-					throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
-						std::string(", readonly>: Can not assign value because type is not move assignable!"));
-				}
-			}
-		}
-
-		___constexpr20___ property(property<value_type, complete>&& other) noexcept(false)
-		{
-			try
-			{
-				_core = reinterpret_cast<value_type*>(::operator new(sizeof(value_type)));
-			}
-
-			catch (std::bad_alloc _error)
-			{
-				throw;
-			}
-
-			if (std::is_constructible<value_type>::value)
-			{
-				if (std::is_move_constructible<value_type>::value)
-					::new(_core) value_type(std::move(other.get()));
-
-				else
-				{
-					throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
-						std::string(", readonly>: Can not assign value because type is neither\nconstructible nor move constructible!"));
-				}
-			}
-
-			else
-			{
-				if (std::is_move_assignable<value_type>::value)
-					*_core = std::move(other.get());
-
-				else
-				{
-					throw basic_error(std::string("property<") + std::string(typeid(value_type).name()) +
-						std::string(", readonly>: Can not assign value because type is not move assignable!"));
-				}
-			}
-		}
-
-		~property() noexcept(false)
-		{
-			if (std::is_destructible<value_type>::value)
-				_core->~value_type();
-
-			try
-			{
-				::operator delete(_core, sizeof(value_type));
-			}
-
-			catch (std::bad_alloc _error)
-			{
-				throw;
-			}
-		}
-
-		___nodiscard___ const value_type& get() const
-		{
-			return *_core;
-		}
-
-		value_type const* const operator-> () const
-		{
-			return _core;
-		}
-
-		friend std::ostream& operator<< (std::ostream& out, const property<value_type, readonly>& prop)
-		{
-			out << *prop._core;
-
-			return out;
-		}
-
-		___nodiscard___ bool operator== (const property<value_type, readonly>& prop) const
-		{
-			if (*_core == prop.get())
-				return true;
-
-			return false;
-		}
-
-		___nodiscard___ bool operator== (property<value_type, readonly>&& prop) const noexcept
-		{
-			if (*_core == prop.get())
-				return true;
-
-			return false;
-		}
-
-		___nodiscard___ bool operator== (const property<value_type, complete>& prop) const
-		{
-			if (*_core == prop.get())
-				return true;
-
-			return false;
-		}
-
-		___nodiscard___ bool operator== (property<value_type, complete>&& prop) const noexcept
-		{
-			if (*_core == prop.get())
-				return true;
-
-			return false;
-		}
-
-	private:
-		value_type* _core;
+		value_type _core;
+		get_accessor<value_type, return_type, parameter_type, getter_type> _getter_core;
+		set_accessor<value_type> _setter_core;
 	};
 }
 
