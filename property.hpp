@@ -10,8 +10,18 @@
 #include "miscellaneous.hpp"
 
 /* The classes below are created in order to emulate the C# property.
-To use a standard get and set property just use  dt0::property<value_type, getter_return_type, getter_parameter_type, getter_function_type>;
-To use a read-only/const/get-only propery use the dt0::const_property<value_type, getter_return_type, getter_parameter_type, getter_function_type> */
+To use a standard get and set property just use
+dt0::property<value_type, getter_return_type, getter_parameter_type, getter_function_type>;
+
+To use a read-only/const/get-only propery use the 
+dt0::const_property<value_type, getter_return_type, getter_parameter_type, getter_function_type> 
+
+You can specify the return type and parameter type of the getter, while the setter is fixed.
+To use a standard get and set property with the default type parameters for the getter just use 
+dt0::property<insert-type>,
+
+You can do the same for the const_property by using dt0::
+const_property<insert-type> */
 
 namespace dt0
 {
