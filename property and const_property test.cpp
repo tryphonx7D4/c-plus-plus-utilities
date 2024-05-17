@@ -34,8 +34,8 @@ int main()
 			[](int& x) -> int { return x * 2; } 
 		},
 		dt0::set<int>{ 
-			[](int& x, const int& y) {x = 2 * y; }, 
-			[](int& x, int&& y) noexcept17 {x = std::move(y * 3); }
+			[](int& x, const int& y) { x = 2 * y; }, 
+			[](int& x, int&& y) noexcept17 { x = std::move(y * 3); }
 		} 
 	};
 
