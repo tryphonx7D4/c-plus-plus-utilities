@@ -723,6 +723,60 @@ namespace dt0
 		get_accessor<value_type, return_type, parameter_type> _getter_core;
 		bool _initialized = false;
 	};
+
+	template <template <typename...> class C, typename... Qs>
+	struct is_property
+	{
+		static const bool value = false;
+	};
+
+	template<typename A>
+	struct is_property<property, A>
+	{
+		static const bool value = true;
+	};
+
+	template<typename A, typename R>
+	struct is_property<property, A, R>
+	{
+		static const bool value = true;
+	};
+
+	template<typename A, typename R, typename P>
+	struct is_property<property, A, R, P>
+	{
+		static const bool value = true;
+	};
+
+	template <typename A>
+	struct is_property<const_property, A>
+	{
+		static const bool value = true;
+	};
+
+	template <typename A, typename R>
+	struct is_property<const_property, A, R>
+	{
+		static const bool value = true;
+	};
+
+	template <template <typename...> class C, typename... Q>
+	struct is_const_property
+	{
+		static const bool value = false;
+	};
+
+	template <typename A>
+	struct is_const_property<const_property, A>
+	{
+		static const bool value = true;
+	};
+
+	template <typename A, typename R>
+	struct is_const_property<const_property, A, R>
+	{
+		static const bool value = true;
+	};
 }
 
 #endif /* PROPERTY_HPP */
