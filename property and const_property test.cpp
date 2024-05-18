@@ -1,5 +1,7 @@
 #include <iostream>
 #include <string>
+#include <vector>
+#include <map>
 #include "property.hpp"
 
 /* This was tested on MSVC only and works for C++14, C++17, C++20 standards (haven't tested for other standards */
@@ -29,6 +31,12 @@ public:
 
 int main()
 {
+	std::cout << std::boolalpha << dt0::is_property<dt0::property, double, double&, double&>::value << '\n';
+	std::cout << dt0::is_const_property<dt0::const_property, char>::value << '\n';
+	std::cout << dt0::is_property<std::vector, int>::value << '\n';
+	std::cout << dt0::is_property<std::map, int, std::string>::value << '\n';
+	std::cout << dt0::is_property<dt0::const_property, std::string, std::string>::value << "\n\n";
+
 	dt0::property<int, int, int&> A { 2, 
 		dt0::get<int, int, int&> { 
 			[](int& x) -> int { return x * 2; } 
@@ -56,7 +64,7 @@ int main()
 	Employee employee(0xDEEDAA, "John", "Doe", 46, 4000);
 
 	std::cout << "Id: " << employee.Id
-		  << "\nName: " << employee.Name
+	          << "\nName: " << employee.Name
 		  << "\nSurname: " << employee.Surname
 		  << "\nAge: " << employee.Age
 		  << "\nSalary: " << employee.Salary << "$\n\n";
