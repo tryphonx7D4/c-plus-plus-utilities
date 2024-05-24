@@ -3,6 +3,7 @@
 #include <vector>
 #include <map>
 #include "property.hpp"
+#include "date_time.hpp"
 
 /* This was tested on MSVC only and works for C++14, C++17, C++20 standards (haven't tested for other standards */
 
@@ -31,6 +32,11 @@ public:
 
 int main()
 {
+	dt0::date_time _now = dt0::date_time::now();
+
+	std::cout << _now.get_date().get_day().month_index() << '.' << _now.get_date().get_month().name() << '.' << _now.get_date().get_year().value() << "\n";
+	std::cout << _now.get_time().as_string() << "\n\n\n";
+
 	std::cout << std::boolalpha << dt0::is_property<dt0::property, double, double&, double&>::value << '\n';
 	std::cout << dt0::is_const_property<dt0::const_property, char>::value << '\n';
 	std::cout << dt0::is_property<std::vector, int>::value << '\n';
@@ -64,9 +70,9 @@ int main()
 	Employee employee(0xDEEDAA, "John", "Doe", 46, 4000);
 
 	std::cout << "Id: " << employee.Id
-	          << "\nName: " << employee.Name
-		  << "\nSurname: " << employee.Surname
-		  << "\nAge: " << employee.Age
-		  << "\nSalary: " << employee.Salary << "$\n\n";
+			  << "\nName: " << employee.Name
+			  << "\nSurname: " << employee.Surname
+			  << "\nAge: " << employee.Age
+			  << "\nSalary: " << employee.Salary << "$\n\n";
 	return 0;
 }
