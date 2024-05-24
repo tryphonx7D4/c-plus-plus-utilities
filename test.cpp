@@ -70,9 +70,9 @@ int main()
 	Employee employee(0xDEEDAA, "John", "Doe", 46, 4000);
 
 	std::cout << "Id: " << employee.Id
-			  << "\nName: " << employee.Name
-			  << "\nSurname: " << employee.Surname
-			  << "\nAge: " << employee.Age
-			  << "\nSalary: " << employee.Salary << "$\n\n";
+		  << "\nName: " << employee.Name
+		  << "\nSurname: " << employee.Surname
+		  << "\nAge: " << employee.Age
+		  << "\nSalary: " << employee.Salary << "$\n\n";
 	return 0;
 }
