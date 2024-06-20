@@ -217,12 +217,16 @@ namespace dt0
 
 		___constexpr20___ property(get<value_type, return_type, parameter_type>&& getter_init, set<value_type>&& setter_init) noexcept
 		{
+			_core = value_type();
+
 			_getter_core = std::move(getter_init);
 			_setter_core = std::move(setter_init);
 		}
 
 		___constexpr20___ property(set<value_type>&& setter_init, get<value_type, return_type, parameter_type>&& getter_init) noexcept
 		{
+			_core = value_type();
+
 			_setter_core = std::move(setter_init);
 			_getter_core = std::move(getter_init);
 		}
